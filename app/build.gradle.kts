@@ -1,3 +1,5 @@
+import shadow.bundletool.com.android.tools.r8.internal.li
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -78,4 +80,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    implementation(libs.androidx.camera.core)
+    implementation(libs.accompanist.permissions)
 }
