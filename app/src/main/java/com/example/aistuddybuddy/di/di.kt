@@ -1,5 +1,8 @@
 package com.example.aistuddybuddy.di
 
+import com.example.aistuddybuddy.domain.repository.OcrRepository
+import com.example.aistuddybuddy.domain.repository.OcrRepositoryImpl
+import com.example.aistuddybuddy.domain.usecase.ProcessOcrImageUseCase
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -22,6 +25,7 @@ val appModule = module {
 }
 
 val repositoryModule = module {
-    // single<OcrRepository> { OcrRepositoryImpl(get()) }
+    single <OcrRepository>{ OcrRepositoryImpl() }
+    factory { ProcessOcrImageUseCase(get()) }
     // single<AiRepository> { AiRepositoryImpl(get(), get()) }
 }

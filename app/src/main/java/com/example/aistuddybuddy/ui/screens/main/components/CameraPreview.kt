@@ -3,6 +3,9 @@ package com.example.aistuddybuddy.ui.screens.main.components
 import android.util.Log
 import android.widget.Toast
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
@@ -14,19 +17,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.aistuddybuddy.getCameraProvider
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
+import com.google.mlkit.vision.common.InputImage
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun CameraPreview (
     modifier: Modifier = Modifier,
     scaleType: PreviewView.ScaleType = PreviewView.ScaleType.FIT_CENTER,
-    onUseCaseConfigured: (Preview) -> Unit = {}
+    onUseCaseConfigured: (Preview) -> Unit = {},
 ) {
 
     val context = LocalContext.current
@@ -44,10 +49,9 @@ fun CameraPreview (
                 cameraProvider.bindToLifecycle(
                     lifecycleOwner,
                     CameraSelector.DEFAULT_BACK_CAMERA,
-                    previewUseCase
+                    previewUseCase,
                 )
-                previewUseCase.setSurfaceProvider(previewView.surfaceProvider)
-                onUseCaseConfigured(previewUseCase)
+                previewUseCase.surfaceProvider = previewView.surfaceProvider
             }catch (e: Exception) {
                 Log.e("CameraPreview", "Error binding camera use case", e)
             }
@@ -75,3 +79,4 @@ fun CameraPreview (
     }
 
 }
+
