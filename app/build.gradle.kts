@@ -83,6 +83,8 @@ dependencies {
 
     implementation(libs.androidx.camera.core)
     implementation(libs.accompanist.permissions)
+    implementation(libs.concurrent.futures.ktx)
+    implementation(libs.lifecycle.runtime.compose)
     implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.11.0")

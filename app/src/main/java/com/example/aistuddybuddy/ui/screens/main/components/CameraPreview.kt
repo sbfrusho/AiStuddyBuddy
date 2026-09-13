@@ -1,82 +1,56 @@
 package com.example.aistuddybuddy.ui.screens.main.components
 
 import android.util.Log
-import android.widget.Toast
+import android.widget.FrameLayout
 import androidx.camera.core.CameraSelector
-import androidx.camera.core.ExperimentalGetImage
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.aistuddybuddy.getCameraProvider
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
-import com.google.mlkit.vision.common.InputImage
+import com.google.android.gms.common.internal.zzag
+import kotlinx.coroutines.flow.MutableStateFlow
 
-@OptIn(ExperimentalPermissionsApi::class)
+private val TAG = "CameraPreview"
+
 @Composable
-fun CameraPreview (
+fun CameraPreview(
     modifier: Modifier = Modifier,
-    scaleType: PreviewView.ScaleType = PreviewView.ScaleType.FIT_CENTER,
-    onUseCaseConfigured: (Preview) -> Unit = {},
+    onPreviewReady: (Boolean) -> Unit
 ) {
-
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraPermissionState = rememberPermissionState(android.Manifest.permission.CAMERA)
+    var previewView = remember { PreviewView(context) }
 
-    if(cameraPermissionState.status.isGranted) {
-        val previewView = remember { PreviewView(context).apply { this.scaleType = scaleType } }
-        val previewUseCase = remember { Preview.Builder().build() }
-
-        LaunchedEffect(Unit) {
+    LaunchedEffect(previewView) {
+        try {
             val cameraProvider = context.getCameraProvider()
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    lifecycleOwner,
-                    CameraSelector.DEFAULT_BACK_CAMERA,
-                    previewUseCase,
-                )
-                previewUseCase.surfaceProvider = previewView.surfaceProvider
-            }catch (e: Exception) {
-                Log.e("CameraPreview", "Error binding camera use case", e)
+            val preview = Preview.Builder().build().also {
+                it.surfaceProvider = previewView.surfaceProvider
             }
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
-        }
-
-        AndroidView(
-            factory = {previewView},
-            modifier = modifier.fillMaxSize()
-        )
-    } else {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            if(cameraPermissionState.status.shouldShowRationale){
-                Toast.makeText(context, "Camera permission is required to use this feature.", Toast.LENGTH_LONG).show()
-            } else {
-                LaunchedEffect(Unit) {
-                    cameraPermissionState.launchPermissionRequest()
-                }
-                Toast.makeText(context, "Requesting camera permission.", Toast.LENGTH_LONG).show()
-            }
+            cameraProvider.unbindAll()
+            cameraProvider.bindToLifecycle(
+                lifecycleOwner,
+                cameraSelector,
+                preview
+            )
+            Log.d(TAG, "Camera preview started")
+            onPreviewReady(true)
+        }catch (e: Exception) {
+            Log.e(TAG, "Error starting camera preview: ${e.message}")
+            onPreviewReady(false)
         }
     }
 
+    AndroidView(
+        modifier = Modifier.fillMaxSize(),
+        factory = { previewView
+        }
+    )
 }
-
