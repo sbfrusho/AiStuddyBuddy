@@ -1,4 +1,4 @@
-import shadow.bundletool.com.android.tools.r8.internal.li
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -7,6 +7,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.google.ksp)
 }
+
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+fun localSecret(name: String): String = "\"${localProperties.getProperty(name, "")}\""
 
 android {
     namespace = "com.example.aistuddybuddy"
@@ -20,6 +27,13 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Optional default API keys, read from local.properties (never committed).
+        // Keys entered in the in-app Settings screen take precedence.
+        buildConfigField("String", "OPENAI_API_KEY", localSecret("OPENAI_API_KEY"))
+        buildConfigField("String", "GEMINI_API_KEY", localSecret("GEMINI_API_KEY"))
+        buildConfigField("String", "DEEPSEEK_API_KEY", localSecret("DEEPSEEK_API_KEY"))
+        buildConfigField("String", "OPENROUTER_API_KEY", localSecret("OPENROUTER_API_KEY"))
     }
 
     buildTypes {
@@ -40,6 +54,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -52,6 +67,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.navigation.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -85,7 +102,5 @@ dependencies {
     implementation(libs.accompanist.permissions)
     implementation(libs.concurrent.futures.ktx)
     implementation(libs.lifecycle.runtime.compose)
-    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
-
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.11.0")
+    implementation(libs.kotlinx.coroutines.play.services)
 }

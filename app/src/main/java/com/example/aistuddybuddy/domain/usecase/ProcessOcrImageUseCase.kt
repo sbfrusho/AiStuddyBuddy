@@ -1,12 +1,12 @@
 package com.example.aistuddybuddy.domain.usecase
 
+import android.graphics.Bitmap
 import com.example.aistuddybuddy.domain.repository.OcrRepository
-import com.google.mlkit.vision.common.InputImage
 
-class ProcessOcrImageUseCase (
+class ProcessOcrImageUseCase(
     private val ocrRepository: OcrRepository
 ) {
-    suspend operator fun invoke(image: InputImage): Result<String> {
+    suspend operator fun invoke(image: Bitmap): Result<String> {
         return ocrRepository.extractText(image)
     }
 }
