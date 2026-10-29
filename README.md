@@ -1,16 +1,48 @@
 # StudyBuddy AI 📚🤖
 
-**Scan a question from your book, pick an AI, get a clear answer.**
+**Snap a textbook question, select it, get a clear answer, in English or বাংলা.**
 
-StudyBuddy AI is an Android app for students. When you're stuck on a question in a textbook, you
-usually have to type it into ChatGPT / Gemini / DeepSeek by hand, or upload a whole page or PDF,
-which is slow and wastes tokens. StudyBuddy instead lets you:
+An Android app that turns a photo of a textbook or exam page into short, student-friendly answers
+using free AI models. Built with **Kotlin, Jetpack Compose and Clean Architecture**.
 
-1. 📷 **Take a photo** of the page (or pick one from the gallery)
-2. ✂️ **Select only the part** that contains the question(s)
-3. 🔤 **Read the questions** — Gemini (or a free OpenRouter vision model) reads the photo, including Bangla, math and figures; on-device ML Kit OCR is the offline fallback
-4. 🤖 **Tap an AI** — Gemini or OpenRouter (ChatGPT and DeepSeek are built in but hidden until paid API access is set up)
-5. ✅ **Get a short, easy-to-understand answer** — `Ans: a. Dhaka` for MCQs, a concise explanation for descriptive questions
+![Kotlin](https://img.shields.io/badge/Kotlin-2.1-7F52FF?logo=kotlin&logoColor=white)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
+![Android](https://img.shields.io/badge/Android-7.0%2B%20(API%2024)-3DDC84?logo=android&logoColor=white)
+![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2B%20MVVM-orange)
+
+---
+
+## 📌 At a glance
+
+| | |
+|---|---|
+| **What** | Android app: photo of a question → AI reads it → short, clear answer |
+| **For** | School, college and university students, especially Bangla-medium students |
+| **Role** | Solo project: design, architecture, implementation and testing |
+| **Stack** | Kotlin · Jetpack Compose · Material 3 · Koin · Ktor · CameraX · ML Kit · Room · Coroutines/Flow |
+| **AI** | Google Gemini and OpenRouter (free models), with vision input and automatic model fallback |
+| **Architecture** | Clean Architecture (domain / data / UI) + MVVM, unidirectional data flow with `StateFlow` |
+
+---
+
+## 🎯 The problem
+
+When a student gets stuck on a question in a book, getting help from an AI is clumsier than it should be:
+
+- **Typing it out is slow.** Long questions with four MCQ options take a minute or more to type, and typos change the meaning.
+- **Uploading a whole page wastes effort.** The AI often answers the wrong question, and every request uses more tokens and more of the free quota.
+- **Local content is poorly supported.** Many students in Bangladesh study in **Bangla**, and textbooks are full of **math, formulas and diagrams**. Typical on-device OCR handles none of these.
+- **AI answers are often too long.** A student revising for an exam wants `Ans: a. Dhaka` and one line of why, not five paragraphs.
+
+## 💡 The solution
+
+StudyBuddy AI reduces this to **snap → select → tap**:
+
+1. 📷 **Take a photo** of the page, or pick one from the gallery.
+2. ✂️ **Drag a box** around just the question(s) you need.
+3. 🔍 **The AI reads the photo** and turns it into editable question cards. It handles Bangla, math and figures, and on-device OCR works as an offline fallback.
+4. 🤖 **Tap an AI** to get a short, exam-style answer.
+5. 🔁 **Ask a follow-up** (*Simpler*, *Example*, *More detail*), switch the language, or **save** the answer for revision.
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -18,180 +50,269 @@ which is slow and wastes tokens. StudyBuddy instead lets you:
 │ Q. What is the capital of Bangladesh?                │
 │ a. Dhaka   b. Rajshahi   c. Chittagong   d. Sylhet   │
 ├──────────────────────────────────────────────────────┤
-│   (C)        (G)        (D)          (O)             │
-│ ChatGPT    Gemini    DeepSeek    OpenRouter          │
+│        (G) Gemini              (O) OpenRouter        │
 ├──────────────────────────────────────────────────────┤
+│ [Answer] [Simpler] [Example] [More detail]           │
 │ Ans: a. Dhaka                                        │
 │ Why: Dhaka is the capital and largest city of        │
-│      Bangladesh.                        📋  🔄        │
+│      Bangladesh.                                     │
+│ Gemini · Gemini 3.8 Flash               🔖  📋  🔄   │
 └──────────────────────────────────────────────────────┘
 ```
 
-> 📖 **Full technical documentation** — architecture, design patterns, why Ktor, navigation,
-> every important function and pipeline diagrams — is in
-> **[docs/PROJECT_GUIDE.md](docs/PROJECT_GUIDE.md)**.
+<!--
+## 📱 Screenshots
+Add real screenshots to docs/screenshots/ and uncomment:
+
+| Camera | Select question | Answer | Saved answers |
+|---|---|---|---|
+| ![](docs/screenshots/camera.png) | ![](docs/screenshots/crop.png) | ![](docs/screenshots/answer.png) | ![](docs/screenshots/saved.png) |
+-->
 
 ---
 
-## Features
+## ✨ Features
 
-| Feature | Details |
+### For students
+| Feature | What it does |
 |---|---|
-| Camera capture | CameraX preview + still capture, with runtime permission handling |
-| Gallery import | Android Photo Picker (no storage permission needed) |
-| Region selection | Custom drag-to-resize crop box with rotate and "select whole page" |
-| AI photo reading | The cropped photo goes to a vision model that returns the questions as JSON — Bangla, math and figures included |
-| On-device OCR | Google ML Kit Text Recognition — free, offline, English only; used when AI reading is off or fails |
-| Question parsing | Splits numbered questions (`1.`, `2)`, `Q.`, `Q3`, `Question 4`) and detects MCQ options (`a.`, `(b)`, `C)`, inline or one per line) |
-| Editable questions | Fix OCR mistakes, add/remove options, or type a question manually |
-| Multiple AIs | Gemini and OpenRouter — answers kept per AI so you can compare |
-| Model fallback | If a free model is busy or retired, the next model is tried automatically (up to 3) |
-| Follow-ups | Simpler / Example / More detail versions of every answer |
-| Answer language | English, বাংলা, or both |
-| Saved answers | Bookmark answers into a local Room database for revision |
-| Model picker | Dropdown per AI with verified model IDs, plus a custom model ID option |
-| Tuned answers | MCQ → `Ans:` + one-line `Why:`; descriptive → ~80–150 words with bullet points |
-| Friendly errors | Explains missing keys, no API credit, rate limits, network errors |
-| Key security | API keys encrypted with the Android Keystore; `local.properties` keys only in debug builds |
+| 📷 **Camera and gallery** | CameraX capture with runtime permission handling, or the Android Photo Picker (no storage permission needed) |
+| ✂️ **Select the question** | Custom drag-to-resize crop box with rotate and "select whole page" |
+| 🔍 **AI photo reading** | A vision model reads the cropped photo and returns structured questions. Works with **Bangla, math and diagrams** |
+| 🔤 **Offline OCR fallback** | Google ML Kit on-device text recognition (English) when AI reading is off or unavailable |
+| ✎ **Editable questions** | Fix recognition mistakes, add or remove MCQ options, or type a question by hand |
+| 🎯 **Answers that fit the question** | MCQ → `Ans:` + one-line `Why:` · written question → 80–150 words with key points · coding question → a complete, working program |
+| 🔁 **Follow-ups** | *Simpler*, *Example* and *More detail* versions of every answer, each cached so switching is instant |
+| 🌐 **Answer language** | English, বাংলা, or both |
+| 🔖 **Saved answers** | Bookmark answers into a local database for exam revision |
+| 💻 **Code-friendly answers** | Programs shown in a monospace block. Copy gives clean code, ready to paste into an editor |
+
+### Under the hood
+| Feature | What it does |
+|---|---|
+| 🔄 **Automatic model fallback** | If a free model is busy (429), retired (404) or down (5xx), the next model is tried automatically, up to 3 |
+| 🖼️ **Figure-aware answering** | When a question refers to a diagram, the photo is sent along with it; otherwise only text is sent, which saves quota |
+| 🔐 **Encrypted API keys** | Keys are encrypted with an AES-256-GCM key held in the **Android Keystore**; older plain-text keys are migrated automatically |
+| 🛡️ **No secrets in release builds** | Developer keys from `local.properties` are compiled into **debug builds only** |
+| ⚠️ **Clear error messages** | Missing key, no API credit, rate limit, network failure: each gets a clear message and a fix |
+| 🧩 **Pluggable AI providers** | ChatGPT and DeepSeek are fully implemented but hidden behind a flag until paid API access is set up |
 
 ---
 
-## Tech stack
+## 🏗️ Architecture
 
-| Area | Library |
+The app follows **Clean Architecture** with **MVVM**. The domain layer is plain Kotlin with no
+Android UI or network code, so business rules (prompting, parsing, fallback decisions) are easy to
+test and providers can be swapped without touching the UI.
+
+```mermaid
+flowchart TB
+    subgraph UI["🎨 UI layer (Jetpack Compose)"]
+        S1[CameraScreen] --- S2[CropScreen] --- S3[QuestionsScreen] --- S4[BookmarksScreen] --- S5[SettingsScreen]
+        VM[ViewModels<br/>StateFlow UI state]
+    end
+    subgraph Domain["🧠 Domain layer (pure Kotlin)"]
+        UC[Use cases<br/>ScanQuestions · AskAi · ExtractQuestions]
+        P[PromptBuilder · AiQuestionParser<br/>QuestionParser · AnswerSegments]
+        RI[Repository interfaces]
+    end
+    subgraph Data["💾 Data layer"]
+        AI[AiRepositoryImpl<br/>Ktor: Gemini · OpenRouter · OpenAI · DeepSeek]
+        OCR[MlKitOcrRepository]
+        DB[BookmarkRepositoryImpl<br/>Room]
+        SET[SettingsRepositoryImpl<br/>SharedPreferences + Keystore]
+    end
+    UI --> VM --> UC --> RI
+    UC --> P
+    RI -.implemented by.-> AI & OCR & DB & SET
+```
+
+### How a scan becomes an answer
+
+```mermaid
+sequenceDiagram
+    actor Student
+    participant UI as Compose UI
+    participant VM as ScanViewModel
+    participant Scan as ScanQuestionsUseCase
+    participant AI as AiRepository
+    participant OCR as ML Kit OCR
+
+    Student->>UI: Photo + crop box
+    UI->>VM: extractQuestions(cropRect)
+    VM->>Scan: invoke(croppedBitmap)
+    alt AI reading on and a key is set
+        Scan->>AI: image + "return questions as JSON"
+        AI-->>Scan: {"questions":[...]}
+    else AI unavailable or failed
+        Scan->>OCR: extractText(bitmap)
+        OCR-->>Scan: raw text → QuestionParser
+    end
+    Scan-->>VM: questions (+ notice if OCR was used)
+    VM-->>UI: Question cards
+    Student->>UI: Tap Gemini
+    UI->>VM: ask(id, GEMINI)
+    VM->>AI: prompt (style + language), image only if needed
+    Note over AI: Busy model? Try the next one (max 3)
+    AI-->>VM: AiAnswer(text, model)
+    VM-->>UI: Answer card
+```
+
+### Project structure
+
+```
+app/src/main/java/com/example/aistuddybuddy/
+├── di/                        Koin modules (app, repository, use case, view model)
+├── domain/                    Pure business logic
+│   ├── model/                 Question, AiProvider/AiModel, AiAnswer, AnswerStyle, Bookmark, errors
+│   ├── parser/                PromptBuilder, AiQuestionParser (JSON), QuestionParser (OCR text), AnswerSegments
+│   ├── repository/            AiRepository, OcrRepository, SettingsRepository, BookmarkRepository
+│   └── usecase/               ScanQuestions, AskAi, ExtractQuestions, ProcessOcrImage
+├── data/
+│   ├── ai/                    Ktor clients for each provider, DTOs, fallback logic
+│   ├── bookmarks/             Room entity, DAO, database
+│   ├── ocr/                   ML Kit text recognition
+│   ├── image/                 Gallery image decoding
+│   └── settings/              Preferences + KeyCipher (Android Keystore encryption)
+├── ui/
+│   ├── navigation/            Navigation Compose host and routes
+│   ├── screens/               camera · crop · questions · bookmarks · settings
+│   ├── components/            Shared composables
+│   └── theme/                 Material 3 theme
+└── util/                      Bitmap and camera helpers
+```
+
+---
+
+## 🧠 Engineering highlights
+
+Some of the more interesting problems and how they were solved:
+
+**1. Getting past OCR limits with vision models.**
+ML Kit's on-device recognizer only reads Latin script, so Bangla questions came out as garbage, and
+math and diagrams were lost. The app now sends the cropped image to a vision model with a strict
+prompt that returns JSON (`text`, `options`, `needsFigure`). `AiQuestionParser` reads the JSON even
+when the model wraps it in code fences or extra text. OCR is kept as an offline fallback.
+
+**2. Reliable answers from free models.**
+Free models are often busy or get retired. `AiRepositoryImpl` sorts each failure into *retryable*
+(429, 404, 5xx) or *final* (bad key, no credit), and moves to the next suitable model only when
+retrying can help. When a photo is attached, it only tries models marked as image-capable. The UI
+shows which model actually answered.
+
+**3. Keeping code intact in answers.**
+A markdown cleanup step was stripping `#include` and `**` from C programs. `AnswerSegments` now
+splits answers into prose and code blocks, so cleanup only touches prose. The UI shows code in
+monospace, and copying removes the ``` markers.
+
+**4. Prompts as testable domain logic.**
+`PromptBuilder` creates prompts based on question type (MCQ or written), follow-up style, answer
+language and whether a figure is attached. That keeps answers short and consistently formatted, and
+lets the UI bold labels like `Ans:` and `Why:`.
+
+**5. Secure key storage without extra dependencies.**
+`KeyCipher` uses an AES-256-GCM key generated inside the Android Keystore, so the raw key never
+leaves secure hardware where the device supports it. Keys saved by older versions are encrypted the
+first time they're loaded.
+
+**6. State management.**
+One activity-scoped `ScanViewModel` holds immutable UI state in a `StateFlow`. Answers are cached
+per *(AI, follow-up style)*, and in-flight requests are tracked so deleting a question cancels its
+network calls.
+
+---
+
+## 🛠️ Tech stack
+
+| Area | Technology |
 |---|---|
-| Language | Kotlin 2.1 |
-| UI | Jetpack Compose + Material 3 |
-| Architecture | Clean Architecture + MVVM |
+| Language | Kotlin 2.1, Coroutines, Flow |
+| UI | Jetpack Compose, Material 3, Navigation Compose |
+| Architecture | Clean Architecture, MVVM, Repository and Use Case patterns |
 | Dependency injection | Koin 4 |
-| Networking | Ktor Client 3 (OkHttp engine) + kotlinx.serialization |
-| Navigation | Jetpack Navigation Compose 2.8 |
+| Networking | Ktor Client 3 (OkHttp engine), kotlinx.serialization |
+| AI providers | Google Gemini API, OpenRouter (OpenAI-compatible), with OpenAI and DeepSeek supported |
 | Camera | CameraX 1.4 |
-| OCR | ML Kit Text Recognition (bundled, Latin script) |
-| Permissions | Accompanist Permissions |
-| Async | Kotlin Coroutines + StateFlow |
+| OCR | Google ML Kit Text Recognition (on-device) |
+| Local storage | Room (saved answers), SharedPreferences + Android Keystore (settings and keys) |
+| Testing | JUnit 4 unit tests for the domain parsers |
+| Build | Gradle Kotlin DSL, version catalog, KSP |
 | Min / target SDK | 24 / 35 |
 
 ---
 
-## Getting started
+## 🧪 Testing
+
+```bash
+./gradlew :app:testDebugUnitTest
+```
+
+Unit tests cover the domain logic that matters most for correctness:
+
+- **`QuestionParserTest`**: splitting OCR text into numbered questions and detecting MCQ options (inline, one per line, `a.` / `(b)` / `C)`)
+- **`AiQuestionParserTest`**: reading the vision model's JSON, including code-fenced replies, Bangla text, blank entries and non-JSON replies
+- **`AnswerSegmentsTest`**: keeping code blocks verbatim (`#include`, `int **p`), handling unclosed fences and producing clean copy text
+
+---
+
+## 🚀 Getting started
 
 ### Requirements
-- Android Studio (recent stable version)
-- JDK 11+
-- A device or emulator with a camera (Android 7.0+). The gallery option works without one.
+- Android Studio (recent stable version), JDK 11+
+- A device or emulator running Android 7.0+ (the gallery option works without a camera)
+- A free API key for **Gemini** and/or **OpenRouter**
 
-### Build & run
+### Build and run
 ```bash
 git clone https://github.com/sbfrusho/AiStuddyBuddy.git
 cd AiStuddyBuddy
-./gradlew :app:assembleDebug        # build the APK
-./gradlew :app:installDebug         # install on a connected device
-./gradlew :app:testDebugUnitTest    # run unit tests
+./gradlew :app:installDebug        # build and install on a connected device
 ```
 
 ### API keys
-
-You need a key for at least one AI. Keys can be entered **in the app** (⚙️ Settings) or put in
-`local.properties` (git-ignored) so they're preloaded in debug builds:
+Enter keys in the app (**⚙️ Settings**), where they are stored encrypted on the device. For
+development, you can also add them to `local.properties` (git-ignored) to preload them in debug builds:
 
 ```properties
 GEMINI_API_KEY=your-key
 OPENROUTER_API_KEY=your-key
-OPENAI_API_KEY=your-key
-DEEPSEEK_API_KEY=your-key
 ```
 
-Keys entered in Settings take priority over `local.properties`.
-
-| AI | Free? | Get a key |
+| AI | Cost | Get a key |
 |---|---|---|
 | **Gemini** | ✅ Free quota, no card needed | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
 | **OpenRouter** | ✅ Free `:free` models (daily limit) | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
-| ChatGPT (OpenAI) | ❌ Prepaid API credit required | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| DeepSeek | ❌ Prepaid API balance required | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) |
 
-> ⚠️ A ChatGPT Plus subscription or the free DeepSeek app does **not** include API usage.
-> If you see *"no credit"* errors, use Gemini or OpenRouter, or top up the API account.
+> ChatGPT and DeepSeek are implemented but hidden, because their APIs need prepaid credit. To enable
+> one, remove `isEnabled = false` from it in `domain/model/AiProvider.kt`.
 
 ---
 
-## How to use
+## ⚠️ Known limitations
 
-1. Open the app and allow camera access (or tap 🖼️ to pick a photo).
-2. Fit the page in view and tap the shutter.
-3. Drag the box around the question **and its options**. You can include several questions.
-4. Tap **Extract questions**.
-5. Check the question — tap ✎ to fix any OCR mistakes.
-6. Tap an AI button. The answer appears below; tap 📋 to copy or 🔄 to ask again.
-7. Tap **Scan more** to add questions from another page. New ones appear at the top.
+- **Users bring their own API key.** That's fine for personal use; a public release should route requests through a backend.
+- **Offline OCR is English only.** Bangla needs AI reading, which needs an internet connection.
+- **Free-model lists change often.** They're kept in `AiProvider.kt`, and Settings has a "Custom model ID" option.
+- **MCQ options are labelled a, b, c, d**, even when the book uses ক, খ, গ, ঘ.
 
----
+## 🗺️ Roadmap
 
-## Project structure
-
-```
-app/src/main/java/com/example/aistuddybuddy/
-├── AiStudyBuddy.kt            Application class — starts Koin
-├── MainActivity.kt            Single activity — hosts Compose + navigation
-├── di/                        Koin modules (app, repository, use case, view model)
-├── domain/                    Pure business logic (no UI, no network details)
-│   ├── model/                 Question, AiProvider, AiModel, errors
-│   ├── parser/                QuestionParser (OCR text → questions), PromptBuilder
-│   ├── repository/            Interfaces: OcrRepository, AiRepository, SettingsRepository
-│   └── usecase/               ExtractQuestions, ProcessOcrImage, AskAi
-├── data/                      Implementations of the domain interfaces
-│   ├── ai/                    Ktor calls to OpenAI / Gemini / DeepSeek / OpenRouter + DTOs
-│   ├── ocr/                   ML Kit text recognition
-│   ├── image/                 Gallery image decoding
-│   └── settings/              API keys & model choice (SharedPreferences)
-├── ui/
-│   ├── navigation/            NavHost and routes
-│   ├── screens/camera/        Camera preview, capture, permission UI
-│   ├── screens/crop/          Crop box + crop screen
-│   ├── screens/questions/     Question cards, list screen, ScanViewModel
-│   ├── screens/settings/      Keys + model dropdowns, SettingsViewModel
-│   ├── components/            ProviderBadge
-│   └── theme/                 Material 3 theme
-└── util/                      Camera & Bitmap helper extensions
-```
+- [ ] **Google sign-in + backend proxy** (Firebase Auth + Cloudflare Worker) so users don't need API keys
+- [ ] **Streaming answers** that appear word by word
+- [ ] **Math rendering** (LaTeX) for formulas
+- [ ] **Follow-up chat** on an answer
+- [ ] **Share or export** saved answers as PDF
+- [ ] **UI tests** with Compose testing and repository tests with a mock HTTP engine
 
 ---
 
-## Pipeline at a glance
+## 👤 Author
 
-```mermaid
-flowchart LR
-    A[📷 Camera / 🖼️ Gallery] --> B[✂️ Crop region]
-    B --> C[🔤 ML Kit OCR<br/>on-device]
-    C --> D[🧩 QuestionParser<br/>questions + MCQ options]
-    D --> E[✎ Editable question cards]
-    E --> F[🧠 PromptBuilder]
-    F --> G{Selected AI}
-    G --> H1[ChatGPT]
-    G --> H2[Gemini]
-    G --> H3[DeepSeek]
-    G --> H4[OpenRouter]
-    H1 & H2 & H3 & H4 --> I[✅ Short answer on card]
-```
+**Sakib Bin Faruque Rusho**
+Android developer · Kotlin · Jetpack Compose
 
-More detailed diagrams (layers, sequence, navigation) are in
-[docs/PROJECT_GUIDE.md](docs/PROJECT_GUIDE.md#9-pipeline-diagrams).
+- GitHub: [@sbfrusho](https://github.com/sbfrusho)
+<!-- - LinkedIn: add your profile link here -->
 
----
-
-## Known limitations
-- **Bangla text isn't recognized** — ML Kit's on-device recognizer supports Latin script (English), not Bengali.
-- **API keys are stored on the device** in plain app storage. Fine for personal use; a published app should call the AIs through a backend.
-- **Question history isn't saved yet** — Room is included as a dependency for this future feature.
-- **Model lists change** — update them in `domain/model/AiProvider.kt`, or use "Custom model ID" in Settings.
-
-## Roadmap
-- [ ] Save questions & answers with Room (history screen)
-- [ ] Bangla OCR support
-- [ ] Backend proxy for API keys
-- [ ] Ask follow-up questions on an answer
-- [ ] Share / export answers as PDF
-
-## Author
-**Sakib Bin Faruque Rusho** — [@sbfrusho](https://github.com/sbfrusho)
+If you have feedback or ideas for improving the app, please
+[open an issue](https://github.com/sbfrusho/AiStuddyBuddy/issues). I'd love to hear them.
