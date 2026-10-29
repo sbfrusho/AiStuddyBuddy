@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.aistuddybuddy.ui.screens.bookmarks.BookmarksScreen
 import com.example.aistuddybuddy.ui.screens.camera.CameraScreen
 import com.example.aistuddybuddy.ui.screens.crop.CropScreen
 import com.example.aistuddybuddy.ui.screens.questions.QuestionsScreen
@@ -17,6 +18,7 @@ object Routes {
     const val CROP = "crop"
     const val QUESTIONS = "questions"
     const val SETTINGS = "settings"
+    const val BOOKMARKS = "bookmarks"
 }
 
 @Composable
@@ -51,11 +53,15 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
             QuestionsScreen(
                 viewModel = scanViewModel,
                 onScanMore = { navController.popBackStack(Routes.CAMERA, inclusive = false) },
-                onOpenSettings = openSettings
+                onOpenSettings = openSettings,
+                onOpenBookmarks = { navController.navigate(Routes.BOOKMARKS) { launchSingleTop = true } }
             )
         }
         composable(Routes.SETTINGS) {
             SettingsScreen(onBack = { navController.popBackStack() })
+        }
+        composable(Routes.BOOKMARKS) {
+            BookmarksScreen(onBack = { navController.popBackStack() })
         }
     }
 }

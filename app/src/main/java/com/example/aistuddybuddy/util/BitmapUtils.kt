@@ -2,7 +2,9 @@ package com.example.aistuddybuddy.util
 
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.util.Base64
 import androidx.compose.ui.geometry.Rect
+import java.io.ByteArrayOutputStream
 import kotlin.math.roundToInt
 
 fun Bitmap.rotate(degrees: Int): Bitmap {
@@ -25,4 +27,11 @@ fun Bitmap.cropNormalized(rect: Rect): Bitmap {
     val right = (rect.right * width).roundToInt().coerceIn(left + 1, width)
     val bottom = (rect.bottom * height).roundToInt().coerceIn(top + 1, height)
     return Bitmap.createBitmap(this, left, top, right - left, bottom - top)
+}
+
+/** Scales the image down to a size vision models read well and encodes it as base64 JPEG. */
+fun Bitmap.toJpegBase64(maxSide: Int = 1600, quality: Int = 85): String {
+    val output = ByteArrayOutputStream()
+    scaleDownTo(maxSide).compress(Bitmap.CompressFormat.JPEG, quality, output)
+    return Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)
 }

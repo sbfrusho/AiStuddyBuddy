@@ -138,11 +138,11 @@ fun CropScreen(
                                 color = MaterialTheme.colorScheme.onPrimary
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("Reading text…")
+                            Text(uiState.busyMessage ?: "Reading text…")
                         } else {
                             Icon(Icons.Filled.DocumentScanner, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Extract questions")
+                            Text("Read questions")
                         }
                     }
                 }

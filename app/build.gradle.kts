@@ -15,6 +15,8 @@ val localProperties = Properties().apply {
 
 fun localSecret(name: String): String = "\"${localProperties.getProperty(name, "")}\""
 
+val apiKeyNames = listOf("OPENAI_API_KEY", "GEMINI_API_KEY", "DEEPSEEK_API_KEY", "OPENROUTER_API_KEY")
+
 android {
     namespace = "com.example.aistuddybuddy"
     compileSdk = 35
@@ -27,17 +29,17 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // Optional default API keys, read from local.properties (never committed).
-        // Keys entered in the in-app Settings screen take precedence.
-        buildConfigField("String", "OPENAI_API_KEY", localSecret("OPENAI_API_KEY"))
-        buildConfigField("String", "GEMINI_API_KEY", localSecret("GEMINI_API_KEY"))
-        buildConfigField("String", "DEEPSEEK_API_KEY", localSecret("DEEPSEEK_API_KEY"))
-        buildConfigField("String", "OPENROUTER_API_KEY", localSecret("OPENROUTER_API_KEY"))
     }
 
     buildTypes {
+        // Optional default API keys, read from local.properties (never committed). Debug builds only:
+        // anything compiled into a release APK can be extracted by whoever installs it.
+        // Keys entered in the in-app Settings screen take precedence.
+        debug {
+            apiKeyNames.forEach { buildConfigField("String", it, localSecret(it)) }
+        }
         release {
+            apiKeyNames.forEach { buildConfigField("String", it, "\"\"") }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

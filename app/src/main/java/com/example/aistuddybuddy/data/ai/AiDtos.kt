@@ -9,8 +9,15 @@ import kotlinx.serialization.json.JsonElement
 @Serializable
 data class ChatCompletionRequest(
     val model: String,
-    val messages: List<ChatMessage>,
+    val messages: List<ChatRequestMessage>,
     val temperature: Double? = null
+)
+
+/** [content] is a plain string, or an array of text and image_url parts when a photo is attached. */
+@Serializable
+data class ChatRequestMessage(
+    val role: String,
+    val content: JsonElement
 )
 
 @Serializable
@@ -47,12 +54,20 @@ data class GeminiContent(
 @Serializable
 data class GeminiPart(
     val text: String? = null,
-    val thought: Boolean? = null
+    val thought: Boolean? = null,
+    @SerialName("inlineData") val inlineData: GeminiInlineData? = null
+)
+
+@Serializable
+data class GeminiInlineData(
+    @SerialName("mimeType") val mimeType: String,
+    val data: String
 )
 
 @Serializable
 data class GeminiGenerationConfig(
-    val temperature: Double? = null
+    val temperature: Double? = null,
+    @SerialName("responseMimeType") val responseMimeType: String? = null
 )
 
 @Serializable

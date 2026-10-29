@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Settings
@@ -24,6 +25,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -44,11 +48,20 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun QuestionsScreen(
     viewModel: ScanViewModel,
     onScanMore: () -> Unit,
-    onOpenSettings: () -> Unit
+    onOpenSettings: () -> Unit,
+    onOpenBookmarks: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    val snackbarHostState = remember { SnackbarHostState() }
     var confirmClear by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.notice) {
+        uiState.notice?.let {
+            viewModel.clearNotice()
+            snackbarHostState.showSnackbar(it, withDismissAction = true, duration = SnackbarDuration.Long)
+        }
+    }
 
     // New questions are added to the top; bring them into view.
     val firstId = uiState.questions.firstOrNull()?.id
@@ -69,12 +82,16 @@ fun QuestionsScreen(
                             Icon(Icons.Filled.DeleteSweep, contentDescription = "Clear all")
                         }
                     }
+                    IconButton(onClick = onOpenBookmarks) {
+                        Icon(Icons.Filled.Bookmarks, contentDescription = "Saved answers")
+                    }
                     IconButton(onClick = onOpenSettings) {
                         Icon(Icons.Filled.Settings, contentDescription = "Settings")
                     }
                 }
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onScanMore,
@@ -101,6 +118,9 @@ fun QuestionsScreen(
                     QuestionCard(
                         item = item,
                         onAsk = { provider, refresh -> viewModel.ask(item.id, provider, refresh) },
+                        onSelectStyle = { viewModel.selectStyle(item.id, it) },
+                        onToggleBookmark = { viewModel.toggleBookmark(item.id) },
+                        onRemoveImage = { viewModel.removeImage(item.id) },
                         onToggleEditing = { viewModel.toggleEditing(item.id) },
                         onDelete = { viewModel.deleteQuestion(item.id) },
                         onQuestionTextChange = { viewModel.updateQuestionText(item.id, it) },

@@ -32,8 +32,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -52,6 +56,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.aistuddybuddy.domain.model.AiProvider
+import com.example.aistuddybuddy.domain.model.AnswerLanguage
+import com.example.aistuddybuddy.domain.model.AppPreferences
 import com.example.aistuddybuddy.domain.model.ProviderConfig
 import com.example.aistuddybuddy.ui.components.ProviderBadge
 import kotlinx.coroutines.launch
@@ -72,6 +78,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val drafts by viewModel.drafts.collectAsStateWithLifecycle()
+    val preferences by viewModel.preferences.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -97,13 +104,20 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            PreferencesCard(
+                preferences = preferences,
+                onAnswerLanguageChange = viewModel::updateAnswerLanguage,
+                onReadWithAiChange = viewModel::updateReadWithAi
+            )
+
             Text(
-                text = "Add an API key for each AI you want to use. Keys are stored only on this device.",
+                text = "Add an API key for each AI you want to use. Both have free keys. " +
+                    "Keys are stored encrypted, only on this device.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            AiProvider.entries.forEach { provider ->
+            AiProvider.enabled.forEach { provider ->
                 ProviderSettingsCard(
                     provider = provider,
                     config = drafts[provider] ?: ProviderConfig(),
@@ -122,6 +136,51 @@ fun SettingsScreen(
                     .navigationBarsPadding()
             ) {
                 Text("Save")
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PreferencesCard(
+    preferences: AppPreferences,
+    onAnswerLanguageChange: (AnswerLanguage) -> Unit,
+    onReadWithAiChange: (Boolean) -> Unit
+) {
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Answer language", style = MaterialTheme.typography.titleMedium)
+            SingleChoiceSegmentedButtonRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            ) {
+                AnswerLanguage.entries.forEachIndexed { index, language ->
+                    SegmentedButton(
+                        selected = preferences.answerLanguage == language,
+                        onClick = { onAnswerLanguageChange(language) },
+                        shape = SegmentedButtonDefaults.itemShape(index, AnswerLanguage.entries.size)
+                    ) {
+                        Text(language.label)
+                    }
+                }
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Read photos with AI", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = "Gemini (or a free OpenRouter vision model) reads the photo, including Bangla, " +
+                            "math and figures. Off: on-device OCR, offline but English only.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Switch(checked = preferences.readWithAi, onCheckedChange = onReadWithAiChange)
             }
         }
     }
