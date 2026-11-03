@@ -4,30 +4,39 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Bookmarks
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DocumentScanner
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -52,19 +61,13 @@ fun QuestionsScreen(
     onOpenBookmarks: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val providers by viewModel.providers.collectAsStateWithLifecycle()
+    val hasAnyKey by viewModel.hasAnyKey.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
-    val snackbarHostState = remember { SnackbarHostState() }
     var confirmClear by remember { mutableStateOf(false) }
 
-    LaunchedEffect(uiState.notice) {
-        uiState.notice?.let {
-            viewModel.clearNotice()
-            snackbarHostState.showSnackbar(it, withDismissAction = true, duration = SnackbarDuration.Long)
-        }
-    }
-
-    // New questions are added to the top; bring them into view.
-    val firstId = uiState.questions.firstOrNull()?.id
+    // New scans and questions are added to the top; bring them into view.
+    val firstId = uiState.pendingScans.firstOrNull()?.id ?: uiState.questions.firstOrNull()?.id
     LaunchedEffect(firstId) {
         if (firstId != null) listState.animateScrollToItem(0)
     }
@@ -91,7 +94,7 @@ fun QuestionsScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onScanMore,
@@ -100,8 +103,13 @@ fun QuestionsScreen(
             )
         }
     ) { padding ->
-        if (uiState.questions.isEmpty()) {
-            EmptyState(modifier = Modifier.padding(padding))
+        if (uiState.questions.isEmpty() && uiState.pendingScans.isEmpty()) {
+            EmptyState(
+                hasAnyKey = hasAnyKey,
+                onScan = onScanMore,
+                onOpenSettings = onOpenSettings,
+                modifier = Modifier.padding(padding)
+            )
         } else {
             LazyColumn(
                 state = listState,
@@ -114,9 +122,23 @@ fun QuestionsScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                if (!hasAnyKey) {
+                    item(key = "connect-banner") { ConnectAiBanner(onOpenSettings) }
+                }
+                items(uiState.pendingScans, key = { "scan-${it.id}" }) { scan ->
+                    PendingScanCard(
+                        scan = scan,
+                        onRetry = { viewModel.retryScan(scan.id) },
+                        onUseOcr = { viewModel.useOcrResult(scan.id) },
+                        onDismiss = { viewModel.dismissScan(scan.id) },
+                        onOpenSettings = onOpenSettings,
+                        modifier = Modifier.animateItem()
+                    )
+                }
                 items(uiState.questions, key = { it.id }) { item ->
                     QuestionCard(
                         item = item,
+                        providers = providers,
                         onAsk = { provider, refresh -> viewModel.ask(item.id, provider, refresh) },
                         onSelectStyle = { viewModel.selectStyle(item.id, it) },
                         onToggleBookmark = { viewModel.toggleBookmark(item.id) },
@@ -154,21 +176,87 @@ fun QuestionsScreen(
 }
 
 @Composable
-private fun EmptyState(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
-            Icon(
-                Icons.Filled.DocumentScanner,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                text = "No questions yet. Scan a page or tap + to type one.",
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center
-            )
+private fun EmptyState(
+    hasAnyKey: Boolean,
+    onScan: () -> Unit,
+    onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        if (!hasAnyKey) {
+            ConnectAiBanner(onOpenSettings)
+            Spacer(Modifier.height(24.dp))
+        }
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier
+                .size(72.dp)
+                .align(Alignment.CenterHorizontally)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Filled.DocumentScanner,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "No questions yet",
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+        Text(
+            text = "Scan a page from your book, or tap + to type a question yourself.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp)
+        )
+        Spacer(Modifier.height(20.dp))
+        Button(onClick = onScan, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            Icon(Icons.Filled.DocumentScanner, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Scan a page")
+        }
+    }
+}
+
+/** Shown until at least one AI key is saved, since nothing can be answered without one. */
+@Composable
+private fun ConnectAiBanner(onOpenSettings: () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(16.dp)) {
+            Icon(Icons.Filled.Key, contentDescription = null, tint = MaterialTheme.colorScheme.onTertiaryContainer)
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Connect a free AI",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+                Text(
+                    "Takes about a minute, no card needed.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+            }
+            FilledTonalButton(onClick = onOpenSettings) { Text("Connect") }
         }
     }
 }

@@ -44,10 +44,17 @@ class SettingsRepositoryImpl(
         _configs.update { it + (provider to cleaned) }
     }
 
+    override fun removeKey(provider: AiProvider) {
+        prefs.edit().remove(keyFor(provider)).apply()
+        // A debug build's local.properties key would come back on next launch; that's fine for development.
+        _configs.update { it + (provider to config(provider).copy(apiKey = "")) }
+    }
+
     override fun savePreferences(preferences: AppPreferences) {
         prefs.edit()
             .putString(ANSWER_LANGUAGE, preferences.answerLanguage.name)
             .putBoolean(READ_WITH_AI, preferences.readWithAi)
+            .putBoolean(ONBOARDING_DONE, preferences.onboardingDone)
             .apply()
         _preferences.value = preferences
     }
@@ -70,7 +77,9 @@ class SettingsRepositoryImpl(
         answerLanguage = prefs.getString(ANSWER_LANGUAGE, null)
             ?.let { name -> AnswerLanguage.entries.firstOrNull { it.name == name } }
             ?: AnswerLanguage.ENGLISH,
-        readWithAi = prefs.getBoolean(READ_WITH_AI, true)
+        readWithAi = prefs.getBoolean(READ_WITH_AI, true),
+        // Existing installs that already have a key skip the welcome screen.
+        onboardingDone = prefs.getBoolean(ONBOARDING_DONE, false) || _configs.value.values.any { it.apiKey.isNotBlank() }
     )
 
     private fun buildConfigKey(provider: AiProvider): String = when (provider) {
@@ -78,6 +87,10 @@ class SettingsRepositoryImpl(
         AiProvider.GEMINI -> BuildConfig.GEMINI_API_KEY
         AiProvider.DEEPSEEK -> BuildConfig.DEEPSEEK_API_KEY
         AiProvider.OPENROUTER -> BuildConfig.OPENROUTER_API_KEY
+        AiProvider.CLAUDE -> BuildConfig.ANTHROPIC_API_KEY
+        AiProvider.GROQ -> BuildConfig.GROQ_API_KEY
+        AiProvider.MISTRAL -> BuildConfig.MISTRAL_API_KEY
+        AiProvider.COHERE -> BuildConfig.COHERE_API_KEY
     }
 
     private fun keyFor(provider: AiProvider) = "api_key_${provider.name}"
@@ -86,5 +99,6 @@ class SettingsRepositoryImpl(
     private companion object {
         const val ANSWER_LANGUAGE = "answer_language"
         const val READ_WITH_AI = "read_with_ai"
+        const val ONBOARDING_DONE = "onboarding_done"
     }
 }

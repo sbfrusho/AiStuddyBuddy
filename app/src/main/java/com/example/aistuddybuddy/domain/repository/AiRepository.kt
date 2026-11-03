@@ -18,4 +18,7 @@ interface AiRepository {
     ): Result<AiAnswer>
 
     fun hasApiKey(provider: AiProvider): Boolean
+
+    /** Sends one tiny request with [apiKey] and [model] to check the key works, before saving it. */
+    suspend fun verifyKey(provider: AiProvider, apiKey: String, model: String): Result<Unit>
 }

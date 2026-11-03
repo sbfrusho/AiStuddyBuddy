@@ -21,6 +21,10 @@ val AiProvider.brandColor: Color
         AiProvider.GEMINI -> Color(0xFF4285F4)
         AiProvider.DEEPSEEK -> Color(0xFF4D6BFE)
         AiProvider.OPENROUTER -> Color(0xFF6467F2)
+        AiProvider.CLAUDE -> Color(0xFFD97757)
+        AiProvider.GROQ -> Color(0xFFF55036)
+        AiProvider.MISTRAL -> Color(0xFFFA520F)
+        AiProvider.COHERE -> Color(0xFF39594D)
     }
 
 /** A simple round icon for each AI provider, tinted with its brand color. */

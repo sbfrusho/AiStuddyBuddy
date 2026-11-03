@@ -29,8 +29,11 @@ fun Bitmap.cropNormalized(rect: Rect): Bitmap {
     return Bitmap.createBitmap(this, left, top, right - left, bottom - top)
 }
 
-/** Scales the image down to a size vision models read well and encodes it as base64 JPEG. */
-fun Bitmap.toJpegBase64(maxSide: Int = 1600, quality: Int = 85): String {
+/**
+ * Scales the image down and encodes it as base64 JPEG. 1280 px keeps printed text sharp for vision
+ * models while making the upload, and the model's reply, noticeably faster than full resolution.
+ */
+fun Bitmap.toJpegBase64(maxSide: Int = 1280, quality: Int = 80): String {
     val output = ByteArrayOutputStream()
     scaleDownTo(maxSide).compress(Bitmap.CompressFormat.JPEG, quality, output)
     return Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP)

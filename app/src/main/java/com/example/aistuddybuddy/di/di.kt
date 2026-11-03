@@ -45,6 +45,9 @@ val appModule = module {
             install(HttpTimeout) {
                 requestTimeoutMillis = 90_000
                 connectTimeoutMillis = 15_000
+                // Without this, OkHttp's 10 s read timeout applies, and vision models reading a
+                // photo often take longer than that before the first byte arrives.
+                socketTimeoutMillis = 90_000
             }
         }
     }
@@ -74,9 +77,10 @@ val viewModelModule = module {
             scanQuestions = get(),
             askAi = get(),
             bookmarkRepository = get(),
-            bitmapLoader = get()
+            bitmapLoader = get(),
+            settingsRepository = get()
         )
     }
     viewModel { BookmarksViewModel(bookmarkRepository = get()) }
-    viewModel { SettingsViewModel(settingsRepository = get()) }
+    viewModel { SettingsViewModel(settingsRepository = get(), aiRepository = get()) }
 }

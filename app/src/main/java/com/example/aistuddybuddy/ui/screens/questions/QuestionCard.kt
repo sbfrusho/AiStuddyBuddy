@@ -1,6 +1,8 @@
 package com.example.aistuddybuddy.ui.screens.questions
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -63,6 +65,7 @@ import com.example.aistuddybuddy.ui.components.brandColor
 @Composable
 fun QuestionCard(
     item: QuestionItem,
+    providers: List<AiProvider>,
     onAsk: (AiProvider, Boolean) -> Unit,
     onSelectStyle: (AnswerStyle) -> Unit,
     onToggleBookmark: () -> Unit,
@@ -112,6 +115,7 @@ fun QuestionCard(
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
                 ProviderSelector(
+                    providers = providers,
                     selected = item.selectedProvider,
                     onSelect = { onAsk(it, false) }
                 )
@@ -203,13 +207,18 @@ private fun QuestionEditor(
 }
 
 @Composable
-private fun ProviderSelector(selected: AiProvider?, onSelect: (AiProvider) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        AiProvider.enabled.forEach { provider ->
+private fun ProviderSelector(providers: List<AiProvider>, selected: AiProvider?, onSelect: (AiProvider) -> Unit) {
+    // Up to three AIs share the width; more than that scroll sideways so names stay readable.
+    val scrolls = providers.size > 3
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = if (scrolls) Modifier.horizontalScroll(rememberScrollState()) else Modifier
+    ) {
+        providers.forEach { provider ->
             val isSelected = provider == selected
             OutlinedButton(
                 onClick = { onSelect(provider) },
-                modifier = Modifier.weight(1f),
+                modifier = if (scrolls) Modifier.width(96.dp) else Modifier.weight(1f),
                 border = BorderStroke(
                     width = if (isSelected) 2.dp else 1.dp,
                     color = if (isSelected) provider.brandColor else MaterialTheme.colorScheme.outlineVariant
@@ -283,10 +292,18 @@ private fun AnswerSection(
     }
 
     when (val state = item.selectedKey?.let { item.answers[it] }) {
-        null, AnswerState.Loading -> Row(verticalAlignment = Alignment.CenterVertically) {
-            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-            Spacer(Modifier.width(12.dp))
-            Text("Asking ${provider.displayName}…", style = MaterialTheme.typography.bodyMedium)
+        null, AnswerState.Loading -> Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                Spacer(Modifier.width(12.dp))
+                Text("Asking ${provider.displayName}…", style = MaterialTheme.typography.bodyMedium)
+            }
+            Text(
+                text = AI_WAIT_NOTICE,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
 
         is AnswerState.Error -> Column {
@@ -317,6 +334,12 @@ private fun AnswerSection(
                         color = MaterialTheme.colorScheme.tertiary
                     )
                 }
+                Text(
+                    text = "AI can make mistakes. Check important answers with your book or teacher.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ProviderBadge(provider, size = 14.dp)
                     Spacer(Modifier.width(6.dp))
@@ -384,3 +407,6 @@ private fun AnnotatedString.Builder.appendLabelled(text: String) {
         }
     }
 }
+
+/** Shown while waiting on an AI, since free models can be slow when busy. */
+internal const val AI_WAIT_NOTICE = "Free AI models can take up to a minute when they're busy."

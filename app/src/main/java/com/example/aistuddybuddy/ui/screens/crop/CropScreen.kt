@@ -3,7 +3,6 @@ package com.example.aistuddybuddy.ui.screens.crop
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +16,6 @@ import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Rotate90DegreesCw
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,7 +31,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
@@ -49,7 +46,7 @@ private val FullSelection = Rect(0f, 0f, 1f, 1f)
 fun CropScreen(
     viewModel: ScanViewModel,
     onBack: () -> Unit,
-    onQuestionsExtracted: () -> Unit
+    onScanStarted: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val image = uiState.image
@@ -126,25 +123,16 @@ fun CropScreen(
                 )
                 Spacer(Modifier.size(12.dp))
                 Button(
-                    onClick = { viewModel.extractQuestions(cropRect, onSuccess = onQuestionsExtracted) },
-                    enabled = image != null && !uiState.isBusy,
+                    onClick = {
+                        viewModel.startScan(cropRect)
+                        onScanStarted()
+                    },
+                    enabled = image != null,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (uiState.isBusy) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(uiState.busyMessage ?: "Reading text…")
-                        } else {
-                            Icon(Icons.Filled.DocumentScanner, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Read questions")
-                        }
-                    }
+                    Icon(Icons.Filled.DocumentScanner, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Read questions")
                 }
             }
         }

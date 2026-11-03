@@ -40,7 +40,7 @@ StudyBuddy AI reduces this to **snap → select → tap**:
 
 1. 📷 **Take a photo** of the page, or pick one from the gallery.
 2. ✂️ **Drag a box** around just the question(s) you need.
-3. 🔍 **The AI reads the photo** and turns it into editable question cards. It handles Bangla, math and figures, and on-device OCR works as an offline fallback.
+3. 🔍 **The questions are read** into editable cards. Clear English text is read instantly on the device; Bangla, math and figures go to a vision AI.
 4. 🤖 **Tap an AI** to get a short, exam-style answer.
 5. 🔁 **Ask a follow-up** (*Simpler*, *Example*, *More detail*), switch the language, or **save** the answer for revision.
 
@@ -78,8 +78,9 @@ Add real screenshots to docs/screenshots/ and uncomment:
 |---|---|
 | 📷 **Camera and gallery** | CameraX capture with runtime permission handling, or the Android Photo Picker (no storage permission needed) |
 | ✂️ **Select the question** | Custom drag-to-resize crop box with rotate and "select whole page" |
+| ⚡ **OCR first, AI when needed** | ML Kit reads clear English instantly and offline. A quality check (line confidence + word shape) catches misreads and sends only those photos to the AI |
 | 🔍 **AI photo reading** | A vision model reads the cropped photo and returns structured questions. Works with **Bangla, math and diagrams** |
-| 🔤 **Offline OCR fallback** | Google ML Kit on-device text recognition (English) when AI reading is off or unavailable |
+| ⏳ **Non-blocking scans** | The questions screen opens right away with a "Reading…" card; if the AI is busy, the card offers **Try again** or **Use OCR anyway** |
 | ✎ **Editable questions** | Fix recognition mistakes, add or remove MCQ options, or type a question by hand |
 | 🎯 **Answers that fit the question** | MCQ → `Ans:` + one-line `Why:` · written question → 80–150 words with key points · coding question → a complete, working program |
 | 🔁 **Follow-ups** | *Simpler*, *Example* and *More detail* versions of every answer, each cached so switching is instant |
@@ -139,16 +140,18 @@ sequenceDiagram
     participant OCR as ML Kit OCR
 
     Student->>UI: Photo + crop box
-    UI->>VM: extractQuestions(cropRect)
+    UI->>VM: startScan(cropRect)
+    VM-->>UI: "Reading…" card (screen opens immediately)
     VM->>Scan: invoke(croppedBitmap)
-    alt AI reading on and a key is set
-        Scan->>AI: image + "return questions as JSON"
+    Scan->>OCR: extractText(bitmap)
+    OCR-->>Scan: text + confidence → QuestionParser → OcrQuality
+    alt OCR looks reliable (clear English)
+        Scan-->>VM: OCR questions (instant)
+    else Bangla, math or misread
+        Scan->>AI: image + "return questions as JSON" (Gemini, then OpenRouter)
         AI-->>Scan: {"questions":[...]}
-    else AI unavailable or failed
-        Scan->>OCR: extractText(bitmap)
-        OCR-->>Scan: raw text → QuestionParser
+        Scan-->>VM: AI questions, or failure with Try again / Use OCR anyway
     end
-    Scan-->>VM: questions (+ notice if OCR was used)
     VM-->>UI: Question cards
     Student->>UI: Tap Gemini
     UI->>VM: ask(id, GEMINI)
@@ -192,7 +195,9 @@ Some of the more interesting problems and how they were solved:
 ML Kit's on-device recognizer only reads Latin script, so Bangla questions came out as garbage, and
 math and diagrams were lost. The app now sends the cropped image to a vision model with a strict
 prompt that returns JSON (`text`, `options`, `needsFigure`). `AiQuestionParser` reads the JSON even
-when the model wraps it in code fences or extra text. OCR is kept as an offline fallback.
+when the model wraps it in code fences or extra text. OCR still runs first: `OcrQuality` checks ML Kit's
+line confidence and whether the text looks like real words, so clear English stays instant and offline
+and only misread photos cost an AI call.
 
 **2. Reliable answers from free models.**
 Free models are often busy or get retired. `AiRepositoryImpl` sorts each failure into *retryable*

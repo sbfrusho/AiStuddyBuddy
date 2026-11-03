@@ -13,5 +13,8 @@ interface SettingsRepository {
 
     fun save(provider: AiProvider, config: ProviderConfig)
 
+    /** Deletes the saved key for [provider], keeping its model choice. */
+    fun removeKey(provider: AiProvider)
+
     fun savePreferences(preferences: AppPreferences)
 }

@@ -6,9 +6,8 @@ data class ScannedQuestion(
     val needsImage: Boolean = false
 )
 
-/** [readBy] is null when on-device OCR was used. [notice] explains a fallback to OCR. */
+/** [readBy] is null when on-device OCR was used. */
 data class ScanResult(
     val questions: List<ScannedQuestion>,
-    val readBy: AiProvider?,
-    val notice: String? = null
+    val readBy: AiProvider?
 )
