@@ -10,17 +10,23 @@ using free AI models. Built with **Kotlin, Jetpack Compose and Clean Architectur
 ![Android](https://img.shields.io/badge/Android-7.0%2B%20(API%2024)-3DDC84?logo=android&logoColor=white)
 ![Architecture](https://img.shields.io/badge/Architecture-Clean%20%2B%20MVVM-orange)
 
+<p align="center">
+  <img src="docs/screenshots/crop.png" width="240" alt="Dragging a selection box around two questions on a textbook page">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/questions.png" width="240" alt="The selected questions read into editable MCQ cards">
+</p>
+
 ---
 
 ## 📌 At a glance
 
 | | |
 |---|---|
-| **What** | Android app: photo of a question → AI reads it → short, clear answer |
+| **What** | Android app: photo of a question → questions read into cards → short, clear AI answer |
 | **For** | School, college and university students, especially Bangla-medium students |
 | **Role** | Solo project: design, architecture, implementation and testing |
 | **Stack** | Kotlin · Jetpack Compose · Material 3 · Koin · Ktor · CameraX · ML Kit · Room · Coroutines/Flow |
-| **AI** | Google Gemini and OpenRouter (free models), with vision input and automatic model fallback |
+| **AI** | Gemini, Groq, Mistral, OpenRouter and Cohere, plus Claude, ChatGPT and DeepSeek with a paid key |
 | **Architecture** | Clean Architecture (domain / data / UI) + MVVM, unidirectional data flow with `StateFlow` |
 
 ---
@@ -34,40 +40,35 @@ When a student gets stuck on a question in a book, getting help from an AI is cl
 - **Local content is poorly supported.** Many students in Bangladesh study in **Bangla**, and textbooks are full of **math, formulas and diagrams**. Typical on-device OCR handles none of these.
 - **AI answers are often too long.** A student revising for an exam wants `Ans: a. Dhaka` and one line of why, not five paragraphs.
 
-## 💡 The solution
+## 💡 How it works
 
-StudyBuddy AI reduces this to **snap → select → tap**:
+StudyBuddy AI reduces this to **snap → select → tap**.
 
-1. 📷 **Take a photo** of the page, or pick one from the gallery.
-2. ✂️ **Drag a box** around just the question(s) you need.
-3. 🔍 **The questions are read** into editable cards. Clear English text is read instantly on the device; Bangla, math and figures go to a vision AI.
-4. 🤖 **Tap an AI** to get a short, exam-style answer.
-5. 🔁 **Ask a follow-up** (*Simpler*, *Example*, *More detail*), switch the language, or **save** the answer for revision.
+| 1. Snap | 2. Select | 3. Tap an AI |
+|---|---|---|
+| ![Camera screen with gallery, capture and questions buttons](docs/screenshots/camera.png) | ![Selection box around two questions](docs/screenshots/crop.png) | ![Two MCQ cards, each with AI buttons](docs/screenshots/questions.png) |
+| Take a photo of the page, or pick one from the gallery. | Drag a box around just the question(s) you need. | Each question becomes a card. Tap an AI for a short, exam-style answer. |
+
+Clear English text is read instantly on the device. Bangla, math and figures go to a vision AI.
+After an answer arrives you can ask for a *Simpler* version, an *Example* or *More detail*, switch
+the language, or save it for revision. An MCQ answer looks like this:
 
 ```
-┌──────────────────────────────────────────────────────┐
-│ [MCQ]                                         ✎  🗑  │
-│ Q. What is the capital of Bangladesh?                │
-│ a. Dhaka   b. Rajshahi   c. Chittagong   d. Sylhet   │
-├──────────────────────────────────────────────────────┤
-│        (G) Gemini              (O) OpenRouter        │
-├──────────────────────────────────────────────────────┤
-│ [Answer] [Simpler] [Example] [More detail]           │
-│ Ans: a. Dhaka                                        │
-│ Why: Dhaka is the capital and largest city of        │
-│      Bangladesh.                                     │
-│ Gemini · Gemini 3.8 Flash               🔖  📋  🔄   │
-└──────────────────────────────────────────────────────┘
+Ans: a. Dhaka
+Why: Dhaka is the capital and largest city of Bangladesh.
 ```
 
-<!--
-## 📱 Screenshots
-Add real screenshots to docs/screenshots/ and uncomment:
+## 📱 More screens
 
-| Camera | Select question | Answer | Saved answers |
+| Fix a misread question | Clear error messages | AI settings | Saved answers |
 |---|---|---|---|
-| ![](docs/screenshots/camera.png) | ![](docs/screenshots/crop.png) | ![](docs/screenshots/answer.png) | ![](docs/screenshots/saved.png) |
--->
+| ![Question card in edit mode with fields for the question and each option](docs/screenshots/edit-question.png) | ![Card showing a message to add a Gemini API key, with Open Settings and Try again](docs/screenshots/missing-key.png) | ![Settings with answer language, read photos with AI, API keys and models](docs/screenshots/settings.png) | ![Saved answers screen in its empty state](docs/screenshots/saved-answers.png) |
+
+> **About these screenshots:** they were taken on an Android emulator from commit `bd15bd6`, the
+> latest commit that currently builds (see [Build status](#build-status)). The theme, the settings
+> screen and the provider list have changed since then, so the current app will look different. The
+> sample page is a generated test image, and the camera preview shows the emulator's virtual scene.
+> No API key was used, so no AI answer is shown.
 
 ---
 
@@ -91,12 +92,12 @@ Add real screenshots to docs/screenshots/ and uncomment:
 ### Under the hood
 | Feature | What it does |
 |---|---|
-| 🔄 **Automatic model fallback** | If a free model is busy (429), retired (404) or down (5xx), the next model is tried automatically, up to 3 |
+| 🔄 **Automatic model fallback** | If a free model is busy (429), retired (404) or down (5xx), the next model is tried automatically, up to 3. Fallback never moves between free and paid models |
 | 🖼️ **Figure-aware answering** | When a question refers to a diagram, the photo is sent along with it; otherwise only text is sent, which saves quota |
 | 🔐 **Encrypted API keys** | Keys are encrypted with an AES-256-GCM key held in the **Android Keystore**; older plain-text keys are migrated automatically |
 | 🛡️ **No secrets in release builds** | Developer keys from `local.properties` are compiled into **debug builds only** |
 | ⚠️ **Clear error messages** | Missing key, no API credit, rate limit, network failure: each gets a clear message and a fix |
-| 🧩 **Pluggable AI providers** | ChatGPT and DeepSeek are fully implemented but hidden behind a flag until paid API access is set up |
+| 🧩 **Pluggable AI providers** | Free providers come first. Paid-only providers appear on question cards once the student saves a key for them |
 
 ---
 
@@ -118,7 +119,7 @@ flowchart TB
         RI[Repository interfaces]
     end
     subgraph Data["💾 Data layer"]
-        AI[AiRepositoryImpl<br/>Ktor: Gemini · OpenRouter · OpenAI · DeepSeek]
+        AI[AiRepositoryImpl<br/>Ktor clients for each AI provider]
         OCR[MlKitOcrRepository]
         DB[BookmarkRepositoryImpl<br/>Room]
         SET[SettingsRepositoryImpl<br/>SharedPreferences + Keystore]
@@ -236,7 +237,7 @@ network calls.
 | Architecture | Clean Architecture, MVVM, Repository and Use Case patterns |
 | Dependency injection | Koin 4 |
 | Networking | Ktor Client 3 (OkHttp engine), kotlinx.serialization |
-| AI providers | Google Gemini API, OpenRouter (OpenAI-compatible), with OpenAI and DeepSeek supported |
+| AI providers | Gemini, Groq, Mistral, OpenRouter, Cohere, Claude, ChatGPT, DeepSeek |
 | Camera | CameraX 1.4 |
 | OCR | Google ML Kit Text Recognition (on-device) |
 | Local storage | Room (saved answers), SharedPreferences + Android Keystore (settings and keys) |
@@ -246,26 +247,19 @@ network calls.
 
 ---
 
-## 🧪 Testing
-
-```bash
-./gradlew :app:testDebugUnitTest
-```
-
-Unit tests cover the domain logic that matters most for correctness:
-
-- **`QuestionParserTest`**: splitting OCR text into numbered questions and detecting MCQ options (inline, one per line, `a.` / `(b)` / `C)`)
-- **`AiQuestionParserTest`**: reading the vision model's JSON, including code-fenced replies, Bangla text, blank entries and non-JSON replies
-- **`AnswerSegmentsTest`**: keeping code blocks verbatim (`#include`, `int **p`), handling unclosed fences and producing clean copy text
-
----
-
 ## 🚀 Getting started
+
+### Build status
+
+> ⚠️ **The latest commit does not build from a fresh clone.** `9aacd54` references code that hasn't
+> been committed yet: `WelcomeScreen`, `PendingScanCard`, `SecureScreen`, `ProviderSetupCard`,
+> `OcrText`, `OcrQuality` and `res/xml/network_security_config.xml`. Until they are added, use
+> `git checkout bd15bd6` to get a version that builds.
 
 ### Requirements
 - Android Studio (recent stable version), JDK 11+
 - A device or emulator running Android 7.0+ (the gallery option works without a camera)
-- A free API key for **Gemini** and/or **OpenRouter**
+- A free API key for at least one AI provider
 
 ### Build and run
 ```bash
@@ -281,15 +275,38 @@ development, you can also add them to `local.properties` (git-ignored) to preloa
 ```properties
 GEMINI_API_KEY=your-key
 OPENROUTER_API_KEY=your-key
+GROQ_API_KEY=your-key
+MISTRAL_API_KEY=your-key
+COHERE_API_KEY=your-key
+ANTHROPIC_API_KEY=your-key
+OPENAI_API_KEY=your-key
+DEEPSEEK_API_KEY=your-key
 ```
 
-| AI | Cost | Get a key |
-|---|---|---|
-| **Gemini** | ✅ Free quota, no card needed | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
-| **OpenRouter** | ✅ Free `:free` models (daily limit) | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
+| AI | Cost | Reads photos | Get a key |
+|---|---|---|---|
+| **Gemini** | ✅ Free quota | All models | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| **Groq** | ✅ Free plan | Qwen only | [console.groq.com/keys](https://console.groq.com/keys) |
+| **Mistral** | ✅ Free mode | All models | [console.mistral.ai/api-keys](https://console.mistral.ai/api-keys) |
+| **OpenRouter** | ✅ Free `:free` models (daily limit), paid models with credits | Some models | [openrouter.ai/settings/keys](https://openrouter.ai/settings/keys) |
+| **Cohere** | ✅ Free trial key (about 1,000 calls a month) | All models | [dashboard.cohere.com/api-keys](https://dashboard.cohere.com/api-keys) |
+| **Claude** | 💳 Paid API credits | All models | [console.anthropic.com](https://console.anthropic.com) |
+| **ChatGPT** | 💳 Paid API credits | All models | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| **DeepSeek** | 💳 Paid API credits | No | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) |
 
-> ChatGPT and DeepSeek are implemented but hidden, because their APIs need prepaid credit. To enable
-> one, remove `isEnabled = false` from it in `domain/model/AiProvider.kt`.
+---
+
+## 🧪 Testing
+
+```bash
+./gradlew :app:testDebugUnitTest
+```
+
+Unit tests cover the domain logic that matters most for correctness:
+
+- **`QuestionParserTest`**: splitting OCR text into numbered questions and detecting MCQ options (inline, one per line, `a.` / `(b)` / `C)`)
+- **`AiQuestionParserTest`**: reading the vision model's JSON, including code-fenced replies, Bangla text, blank entries and non-JSON replies
+- **`AnswerSegmentsTest`**: keeping code blocks verbatim (`#include`, `int **p`), handling unclosed fences and producing clean copy text
 
 ---
 
