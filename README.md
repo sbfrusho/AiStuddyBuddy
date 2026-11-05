@@ -64,8 +64,7 @@ Why: Dhaka is the capital and largest city of Bangladesh.
 |---|---|---|---|
 | ![Question card in edit mode with fields for the question and each option](docs/screenshots/edit-question.png) | ![Card showing a message to add a Gemini API key, with Open Settings and Try again](docs/screenshots/missing-key.png) | ![Settings with answer language, read photos with AI, API keys and models](docs/screenshots/settings.png) | ![Saved answers screen in its empty state](docs/screenshots/saved-answers.png) |
 
-> **About these screenshots:** they were taken on an Android emulator from commit `bd15bd6`, the
-> latest commit that currently builds (see [Build status](#build-status)). The theme, the settings
+> **About these screenshots:** they were taken on an Android emulator from commit `bd15bd6`. The theme, the settings
 > screen and the provider list have changed since then, so the current app will look different. The
 > sample page is a generated test image, and the camera preview shows the emulator's virtual scene.
 > No API key was used, so no AI answer is shown.
@@ -248,13 +247,6 @@ network calls.
 ---
 
 ## 🚀 Getting started
-
-### Build status
-
-> ⚠️ **The latest commit does not build from a fresh clone.** `9aacd54` references code that hasn't
-> been committed yet: `WelcomeScreen`, `PendingScanCard`, `SecureScreen`, `ProviderSetupCard`,
-> `OcrText`, `OcrQuality` and `res/xml/network_security_config.xml`. Until they are added, use
-> `git checkout bd15bd6` to get a version that builds.
 
 ### Requirements
 - Android Studio (recent stable version), JDK 11+
